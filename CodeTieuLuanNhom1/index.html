@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2A2Q - Game Trực Tuyến</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* ========== Modal Styles ========== */
+      .modal {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      }
+      .modal-content {
+        background: #fff;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        max-width: 90%;
+        max-height: 90%;
+        overflow-y: auto;
+      }
+      /* ========== Dropdowns ========== */
+      .user-dropdown,
+      .lang-dropdown,
+      .theme-dropdown {
+        position: relative;
+        display: inline-block;
+      }
+      .user-dropdown-content,
+      .lang-dropdown-content,
+      .theme-dropdown-content {
+        display: none;
+        position: absolute;
+        right: 0; top: 100%;
+        background-color: white;
+        min-width: 160px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        z-index: 1000;
+      }
+      .user-dropdown:hover .user-dropdown-content,
+      .lang-dropdown:hover .lang-dropdown-content,
+      .theme-dropdown:hover .theme-dropdown-content {
+        display: block;
+      }
+      .user-dropdown-content a,
+      .lang-dropdown-content button,
+      .theme-dropdown-content button {
+        display: block;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .user-dropdown-content a:hover,
+      .lang-dropdown-content button:hover,
+      .theme-dropdown-content button:hover {
+        background-color: #f4f4f4;
+      }
+      /* Tăng kích thước nút dropdown (ngôn ngữ, giao diện, user menu) */
+      .lang-dropdown > button,
+      .theme-dropdown > button,
+      .user-dropdown > button {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+      }
+      /* ========== Game Item Style ========== */
+      .game-item {
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .game-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      }
+      /* ========== Footer ========== */
+      .footer-privacy {
+        background: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+        padding: 1rem;
+        font-size: 0.875rem;
+      }
+      .fixed-bottom {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+      }
+      /* ========== About Section ========== */
+      .about-section {
+        background: #e2e8f0;
+        padding: 2rem 1rem;
+        text-align: center;
+        margin-top: 2rem;
+        border-radius: 0.5rem;
+      }
+      .about-section h2 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+      .about-section p {
+        margin-bottom: 1rem;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body class="bg-white pb-32 transition-colors duration-500" id="body">
+    <!-- ========== Header ========== -->
+    <header class="bg-white shadow">
+      <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+        <!-- Logo -->
+        <div id="logo" class="flex items-center cursor-pointer" title="Home">
+          <div class="relative flex items-center justify-center h-12 w-12 rounded-full" 
+               style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/2/21/Flag_of_Vietnam.svg'); background-size: cover;">
+            <span class="text-white font-bold">VN</span>
+          </div>
+          <span class="text-3xl font-bold ml-3" id="header-logo-text">2A2Q</span>
+        </div>
+        <!-- Toolbar -->
+        <div class="flex items-center space-x-4">
+          <!-- Search -->
+          <div class="relative">
+            <i class="fas fa-search absolute top-1/2 transform -translate-y-1/2 left-3 text-gray-400"></i>
+            <input id="search-input" class="border rounded pl-10 pr-4 py-2 w-80" placeholder="" type="text" />
+          </div>
+          <!-- New Games Button -->
+          <button id="new-game-btn" class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition flex items-center" title="Refresh">
+            <i class="fas fa-redo-alt mr-2"></i>
+            <span id="newGameText">Game Mới</span>
+          </button>
+          <!-- Auth Buttons -->
+          <div id="auth-buttons" class="flex items-center space-x-3">
+            <button id="register-btn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition flex items-center">
+              <i class="fas fa-user-plus mr-2"></i><span id="registerText">Đăng ký</span>
+            </button>
+            <button id="login-btn" class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition flex items-center">
+              <i class="fas fa-sign-in-alt mr-2"></i><span id="loginText">Đăng nhập</span>
+            </button>
+          </div>
+          <!-- User Menu (sau khi đăng nhập) -->
+          <div id="user-menu" class="user-dropdown hidden">
+            <button class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 transition flex items-center space-x-2">
+              <i class="fas fa-user-circle text-2xl"></i>
+              <span id="username-display">mnbna</span>
+              <i class="fas fa-caret-down"></i>
+            </button>
+            <div class="user-dropdown-content text-sm">
+              <a href="#" id="btn-recent-plays"><i class="fas fa-history mr-2"></i><span id="recentPlayText">Chơi gần đây</span></a>
+              <a href="#" id="btn-bookmarks"><i class="fas fa-bookmark mr-2"></i><span id="bookmarkText">Đánh dấu (0)</span></a>
+              <a href="#" id="btn-favorites"><i class="fas fa-heart mr-2"></i><span id="favoriteText">Được yêu thích (0)</span></a>
+              <a href="#" id="btn-achievements"><i class="fas fa-trophy mr-2"></i><span id="achievementText">Thành tích</span></a>
+              <a href="#" id="btn-my-profile"><i class="fas fa-user mr-2"></i><span id="myProfileText">Hồ sơ của tôi</span></a>
+              <a href="#" id="btn-edit-profile"><i class="fas fa-edit mr-2"></i><span id="editProfileText">Chỉnh sửa hồ sơ</span></a>
+              <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt mr-2"></i><span id="logoutText">Đăng xuất</span></a>
+            </div>
+          </div>
+          <!-- Language Dropdown -->
+          <div class="lang-dropdown bg-gray-200 px-6 py-3 rounded cursor-pointer flex items-center space-x-2">
+            <i class="fas fa-globe text-xl"></i>
+            <span id="languageText">Ngôn ngữ</span>
+            <div class="lang-dropdown-content">
+              <button data-lang="vi">Tiếng Việt</button>
+              <button data-lang="en">English</button>
+            </div>
+          </div>
+          <!-- Theme Dropdown -->
+          <div class="theme-dropdown bg-gray-200 px-6 py-3 rounded cursor-pointer flex items-center space-x-2">
+            <i class="fas fa-palette text-xl"></i>
+            <span id="themeText">Giao diện</span>
+            <div class="theme-dropdown-content">
+              <button data-color="white">Trắng</button>
+              <button data-color="pink-50">Hồng nhạt</button>
+              <button data-color="green-50">Xanh mint</button>
+              <button data-color="yellow-50">Vàng nhạt</button>
+              <button data-color="blue-50">Xanh dương nhạt</button>
+              <button data-color="purple-50">Tím nhạt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========== Main Content ========== -->
+    <main class="container mx-auto px-4 py-6">
+      <!-- Filter Buttons Groups -->
+      <!-- Group 1 (7 nút) -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button class="filter-btn bg-pink-200 px-4 py-2 rounded" data-category="cho-con-gai" data-key="girl">
+          <i class="fas fa-female mr-1"></i><span>Cho Con Gái</span>
+        </button>
+        <button class="filter-btn bg-purple-200 px-4 py-2 rounded" data-category="doi-khang" data-key="fighting">
+          <i class="fas fa-fist-raised mr-1"></i><span>Đối Kháng</span>
+        </button>
+        <button class="filter-btn bg-green-200 px-4 py-2 rounded" data-category="lai-xe" data-key="driving">
+          <i class="fas fa-car mr-1"></i><span>Lái Xe</span>
+        </button>
+        <button class="filter-btn bg-orange-200 px-4 py-2 rounded" data-category="ban-nhau" data-key="shooting">
+          <i class="fas fa-crosshairs mr-1"></i><span>Bắn Nhau</span>
+        </button>
+        <button class="filter-btn bg-green-500 text-white px-4 py-2 rounded" data-category="chien-thuat-nhap-vai" data-key="strategy_rpg">
+          <i class="fas fa-chess-knight mr-1"></i><span>Chiến Thuật &amp; Nhập Vai</span>
+        </button>
+        <button class="filter-btn bg-yellow-200 px-4 py-2 rounded" data-category="can-nao" data-key="puzzle">
+          <i class="fas fa-lightbulb mr-1"></i><span>Giải Đố</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="all" data-key="all">
+          <i class="fas fa-list mr-1"></i><span>Tất Cả</span>
+        </button>
+      </div>
+      <!-- Group 2 (8 nút) -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="2-nguoi-choi" data-key="two_player">
+          <span>2 Người Chơi</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="sung" data-key="gun">
+          <span>Súng</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="xe-hoi" data-key="car">
+          <span>Xe Hơi</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="thoi-trang" data-key="fashion">
+          <span>Thời Trang</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="kinh-di" data-key="horror">
+          <span>Kinh Dị</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="arcade" data-key="arcade">
+          <span>Arcade</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="nau-an" data-key="cooking">
+          <span>Nấu Ăn</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="bong-da" data-key="football">
+          <span>Bóng Đá</span>
+        </button>
+      </div>
+      <!-- Group 3 (9 nút) -->
+      <div class="flex flex-wrap gap-2 mb-6">
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="3-nguoi" data-key="three_player">
+          <span>3 Người Chơi</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="tank" data-key="tank">
+          <span>Xe Tăng</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="lua-va-nuoc" data-key="fire_and_water">
+          <span>Lửa &amp; Nước</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="pokemon" data-key="pokemon">
+          <span>Pokemon</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="papa" data-key="papa">
+          <span>Papa’s Games</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="roblox" data-key="roblox">
+          <span>Roblox</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="zombie" data-key="zombie">
+          <span>Zombie</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="fish" data-key="fish">
+          <span>Cá</span>
+        </button>
+        <button class="filter-btn bg-gray-200 px-4 py-2 rounded" data-category="chess" data-key="chess">
+          <span>Cờ Vua</span>
+        </button>
+      </div>
+
+      <!-- ========== Game Grid (30 game) ========== -->
+      <div id="game-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <!-- Mỗi game bao gồm ảnh và tiêu đề, căn giữa -->
+        <!-- Game 1 -->
+        <a href="https://s1.gombis.com/g2/toca-life-unlimited/?key=y8&value=default" class="game-item" data-title="Toca Life Unlimited" data-category="cho-con-gai doi-khang">
+          <img alt="Toca Life Unlimited" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/195809/small.gif" />
+          <p class="text-sm font-semibold mt-1">Toca Life Unlimited</p>
+        </a>
+        <!-- Game 2 -->
+        <a href="https://html5.gamedistribution.com/939466b673784325be7725224abbd70d/?gd_sdk_referrer_url=https%3A%2F%2Fvi.y8.com%2Fgames%2Fmotorbike_&key=y8&value=default" class="game-item" data-title="Motorbike" data-category="lai-xe ban-nhau">
+          <img alt="Motorbike" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/164085/small.gif" />
+          <p class="text-sm font-semibold mt-1">Motorbike</p>
+        </a>
+        <!-- Game 3 -->
+        <a href="Keep Zombie Away" class="game-item" data-title="Keep Zombie Away" data-category="chien-thuat-nhap-vai">
+          <img alt="Keep Zombie Away" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/156987/small.gif" />
+          <p class="text-sm font-semibold mt-1">Keep Zombie Away</p>
+        </a>
+        <!-- Game 4 -->
+        <a href="https://html5.gamedistribution.com/9ec319450435426daa47f50331d8e3dc/?gd_sdk_referrer_url=https%3A%2F%2Fvi.y8.com%2Fgames%2Fclassic_sudoku_puzzle&key=y8&value=default" class="game-item" data-title="Classic Sudoku Puzzle" data-category="can-nao">
+          <img alt="Classic Sudoku Puzzle" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/163965/small.gif" />
+          <p class="text-sm font-semibold mt-1">Classic Sudoku Puzzle</p>
+        </a>
+        <!-- Game 5 -->
+        <a href="https://html5.gamedistribution.com/03f124074b0049f89fdace0cacf8ead5/?gd_sdk_referrer_url=https%3A%2F%2Fvi.y8.com%2Fgames%2Ffireboy_and_watergirl_5_elements&key=y8&value=default" class="game-item" data-title="Fireboy and Watergirl 5" data-category="2-nguoi-choi sung">
+          <img alt="Fireboy and Watergirl 5" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/119168/small.gif" />
+          <p class="text-sm font-semibold mt-1">Fireboy &amp; Watergirl 5</p>
+        </a>
+        <!-- Game 6 -->
+        <a href="https://html5.gamedistribution.com/337302b23b5943d8bcfc501d81d50cdb/?gd_sdk_referrer_url=https%3A%2F%2Fvi.y8.com%2Fgames%2Ftraffic_jam_3d&key=y8&value=default" class="game-item" data-title="Traffic Jam 3D" data-category="xe-hoi">
+          <img alt="Traffic Jam 3D" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/152012/small.gif" />
+          <p class="text-sm font-semibold mt-1">Traffic Jam 3D</p>
+        </a>
+        <!-- Game 7 -->
+        <a href="https://storage.y8.com/y8-studio/html5/toni/toddie_vintage_school_v2502051/?key=y8&value=default" class="game-item" data-title="Toddie Vintage School" data-category="thoi-trang">
+          <img alt="Toddie Vintage School" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/199473/small.gif" />
+          <p class="text-sm font-semibold mt-1">Toddie Vintage School</p>
+        </a>
+        <!-- Game 8 -->
+        <a href="https://html5.gamedistribution.com/585e28f239534ba2901bd2cbe03f146b/?gd_sdk_referrer_url=https%3A%2F%2Fvi.y8.com%2Fgames%2Fthe_survey&key=y8&value=default" class="game-item" data-title="The Survey" data-category="kinh-di">
+          <img alt="The Survey" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/189269/small.gif" />
+          <p class="text-sm font-semibold mt-1">The Survey</p>
+        </a>
+        <!-- Game 9 -->
+        <a href="https://html5.gamedistribution.com/58dc8c934e864cf5a62ad9c7272eaf78/?gd_sdk_referrer_url=https%3A%2F%2Fvi.y8.com%2Fgames%2Flast_war_survival_online&key=y8&value=default" class="game-item" data-title="Last War Survival" data-category="arcade">
+          <img alt="Last War Survival" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/173855/small.gif" />
+          <p class="text-sm font-semibold mt-1">Last War Survival</p>
+        </a>
+        <!-- Game 10 -->
+        <a href="https://storage.y8.com/y8-studio/html5/toni/roxie_kitchen_kimchi_jjigae_v2411261/?key=y8&value=default" class="game-item" data-title="Roxie's Kitchen: Kimchi" data-category="nau-an">
+          <img alt="Roxie's Kitchen: Kimchi" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/194647/small.gif" />
+          <p class="text-sm font-semibold mt-1">Roxie's Kitchen: Kimchi</p>
+        </a>
+        <!-- Game 11 -->
+        <a href="https://hello.freakxapps.com/play/football-stars?key=y8&value=default&newPubId=y8" class="game-item" data-title="Football Stars" data-category="bong-da football">
+          <img alt="Football Stars" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/158319/small.gif" />
+          <p class="text-sm font-semibold mt-1">Football Stars</p>
+        </a>
+        <!-- Game 12 -->
+        <a href="https://html5.gamedistribution.com/ac12cd660de840bfbb2c633053209c09/?key=y8&value=default" class="game-item" data-title="Block 3D" data-category="3d">
+          <img alt="Block 3D" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/151992/small.gif" />
+          <p class="text-sm font-semibold mt-1">Block 3D</p>
+        </a>
+        <!-- Game 13 -->
+        <a href="https://storage.y8.com/y8-studio/html5/toni/murder_mafia_Y8_v2503171/?key=y8&value=default" class="game-item" data-title="Murder Mafia" data-category="them-the-loai">
+          <img alt="Murder Mafia" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/168397/small.gif" />
+          <p class="text-sm font-semibold mt-1">Murder Mafia</p>
+        </a>
+        <!-- Game 14 -->
+        <a href="https://play.wgplayground.com/ifr/b7491702970e3b0b6de397f80a0a1844?key=y8&value=default" class="game-item" data-title="Hazmob FPS" data-category="2-nguoi sung">
+          <img alt="Hazmob FPS" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/199075/small.gif" />
+          <p class="text-sm font-semibold mt-1">Hazmob FPS</p>
+        </a>
+        <!-- Game 15 -->
+        <a href="https://html5.gamedistribution.com/11561cc5bc754589bb654c782139a781/?gd_sdk_referrer_url=https%3A%2F%2Fvi.y8.com%2Fgames%2Ftank_tank_&key=y8&value=default" class="game-item" data-title="Tank Tank" data-category="tank">
+          <img alt="Tank Tank" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/132340/small.gif" />
+          <p class="text-sm font-semibold mt-1">Tank Tank</p>
+        </a>
+        <!-- Game 16 -->
+        <a href="https://html5.gamemonetize.co/ikpi1ghjcghyj8jk95k5wif87fz7hfs2/?key=y8&value=default" class="game-item" data-title="Football Penalty" data-category="football bong-da">
+          <img alt="Football Penalty" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/183147/small.gif" />
+          <p class="text-sm font-semibold mt-1">Football Penalty</p>
+        </a>
+        <!-- Game 17 -->
+        <a href="https://html5.gamedistribution.com/3790681b69584409b7f681a8e400102d/?gd_sdk_referrer_url=https%3A%2F%2Fvi.y8.com%2Fgames%2Ffireboy_and_watergirl_in_the_crystal_temple&key=y8&value=default" class="game-item" data-title="Fireboy &amp; Watergirl Crystal" data-category="lua-va-nuoc 2-nguoi">
+          <img alt="Fireboy &amp; Watergirl Crystal" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/126142/small.gif" />
+          <p class="text-sm font-semibold mt-1">Fireboy &amp; Watergirl Crystal</p>
+        </a>
+        <!-- Game 18 -->
+        <a href="https://html5.gamedistribution.com/2f658de7229e49dba68786ffdc921e76/?gd_sdk_referrer_url=https%3A%2F%2Fvi.y8.com%2Fgames%2Fdynamons&key=y8&value=default" class="game-item" data-title="Dynamons" data-category="pokemon">
+          <img alt="Dynamons" class="rounded" src="https://img.y8.com/cloud/y8-thumbs/79084/small.gif" />
+          <p class="text-sm font-semibold mt-1">Dynamons</p>
+        </a>
+        <!-- Game 19 -->
+        <a href="https://storage.y8.com/y8-studio/unity_webgl/perion1111/2_player_airplane/?key=y8&value=default" class="game-item" data-title="2 Player Airplane" data-category="2-player">
+          <img alt="2 Player Airplane" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/182931/small.gif" />
+          <p class="text-sm font-semibold mt-1">2 Player Airplane</p>
+        </a>
+        <!-- Game 20 -->
+        <a href="FNF Papa's Funkeria" class="game-item" data-title="FNF Papa's Funkeria" data-category="papa">
+          <img alt="FNF Papa's Funkeria" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/153546/small.gif" />
+          <p class="text-sm font-semibold mt-1">FNF Papa's Funkeria</p>
+        </a>
+        <!-- Game 21 -->
+        <a href="https://storage.y8.com/y8-studio/html5/frivgamestoday/b863baafe176/?key=y8&value=default" class="game-item" data-title="PG Coloring: Roblox" data-category="roblox">
+          <img alt="PG Coloring: Roblox" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/153198/small.gif" />
+          <p class="text-sm font-semibold mt-1">PG Coloring: Roblox</p>
+        </a>
+        <!-- Game 22 -->
+        <a href="https://i.simmer.io/@joel123/zombie-1?key=y8&value=default" class="game-item" data-title="Zombie" data-category="zombie">
+          <img alt="Zombie" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/163487/small.gif" />
+          <p class="text-sm font-semibold mt-1">Zombie</p>
+        </a>
+        <!-- Game 23 -->
+        <a href="https://cdn.y8.com/Xd/xd_handler.html?version=44&xdm_e=https%3A%2F%2Fvi.y8.com&xdm_c=id_xd_api&xdm_p=1" class="game-item" data-title="Fish as a Dish" data-category="fish">
+          <img alt="Fish as a Dish" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/161355/small.gif" />
+          <p class="text-sm font-semibold mt-1">Fish as a Dish</p>
+        </a>
+        <!-- Game 24 -->
+        <a href="https://cdn.y8.com/Xd/xd_handler.html?version=44&xdm_e=https%3A%2F%2Fvi.y8.com&xdm_c=id_xd_api&xdm_p=1" class="game-item" data-title="Chess" data-category="chess">
+          <img alt="Chess" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/141559/small.gif" />
+          <p class="text-sm font-semibold mt-1">Chess</p>
+        </a>
+        <!-- Game 25 -->
+        <a href="https://cdn.y8.com/Xd/xd_handler.html?version=44&xdm_e=https%3A%2F%2Fvi.y8.com&xdm_c=id_xd_api&xdm_p=1" class="game-item" data-title="TikTok Diva Weekly" data-category="cho-con-gai">
+          <img alt="TikTok Diva Weekly" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/150606/small.gif" />
+          <p class="text-sm font-semibold mt-1">TikTok Diva Weekly</p>
+        </a>
+        <!-- Game 26 -->
+        <a href="https://cdn.y8.com/Xd/xd_handler.html?version=44&xdm_e=https%3A%2F%2Fvi.y8.com&xdm_c=id_xd_api&xdm_p=1" class="game-item" data-title="Bat Outa Dot" data-category="doi-khang">
+          <img alt="Bat Outa Dot" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/129078/small.gif" />
+          <p class="text-sm font-semibold mt-1">Bat Outa Dot</p>
+        </a>
+        <!-- Game 27 -->
+        <a href="Supra Drift 3D" class="game-item" data-title="Supra Drift 3D" data-category="lai-xe">
+          <img alt="Supra Drift 3D" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/126458/small.gif" />
+          <p class="text-sm font-semibold mt-1">Supra Drift 3D</p>
+        </a>
+        <!-- Game 28 -->
+        <a href="https://cdn.y8.com/Xd/xd_handler.html?version=44&xdm_e=https%3A%2F%2Fvi.y8.com&xdm_c=id_xd_api&xdm_p=1" class="game-item" data-title="CS Dust" data-category="ban-nhau">
+          <img alt="CS Dust" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/194911/small.gif" />
+          <p class="text-sm font-semibold mt-1">CS Dust</p>
+        </a>
+        <!-- Game 29 -->
+        <a href="https://cdn.y8.com/Xd/xd_handler.html?version=44&xdm_e=https%3A%2F%2Fvi.y8.com&xdm_c=id_xd_api&xdm_p=1" class="game-item" data-title="Crown Guard" data-category="chien-thuat-nhap-vai">
+          <img alt="Crown Guard" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/181479/small.gif" />
+          <p class="text-sm font-semibold mt-1">Crown Guard</p>
+        </a>
+        <!-- Game 30 -->
+        <a href="https://cdn.y8.com/Xd/xd_handler.html?version=44&xdm_e=https%3A%2F%2Fvi.y8.com&xdm_c=id_xd_api&xdm_p=1" class="game-item" data-title="Home Pin 2" data-category="can-nao">
+          <img alt="Home Pin 2" class="rounded" src="https://img.y8.com/cloud/v2-y8-thumbs-small-thumbnails-001/174625/small.png" />
+          <p class="text-sm font-semibold mt-1">Home Pin 2</p>
+        </a>
+      </div>
+      
+      <!-- ========== About Section ========== -->
+      <section class="about-section mt-8">
+        <h2 class="text-2xl font-bold mb-4">
+          Trò chơi Trực tuyến Miễn phí dành cho Mọi lứa tuổi - Bắt đầu Chơi ngay hôm nay!
+        </h2>
+        <p>
+          Khám phá các Trò chơi Trực tuyến Miễn phí Hay nhất - Đắm chìm trong thế giới vui nhộn và phiêu lưu. Hàng nghìn trò chơi thú vị đang chờ đón bạn!
+        </p>
+        <p>
+          <strong>2A2Q là gì?</strong> Hơn 15 năm chơi game trên Internet tại 2A2Q.com. Bạn có biết rằng 2Q2A đã cung cấp game trực tuyến miễn phí và câu đố từ năm 2006 không? Vậy là hơn 15 năm 2A2Q.com vui vẻ! Cảm ơn bạn đã là một phần của cộng đồng 2A2Q!
+        </p>
+        <p>
+          <strong>2A2Q: Trang web trò chơi cuối của bạn</strong> – Games 2A2Q là nhà phát hành và triển khai game với mạng xã hội gồm 30 triệu người chơi, video, hướng dẫn và các nội dung truyền thông phát hành hàng giờ.
+        </p>
+        <p>
+          <strong>Sự Phát triển của Game Trình duyệt</strong> – Với lịch sử lâu đời, 2A2Q.com đã ghi lại hiện tượng xã hội về game trình duyệt miễn phí như một phương tiện nghệ thuật quan trọng.
+        </p>
+        <p>
+          <strong>Thể loại game</strong> – Khám phá những trò chơi trực tuyến được phân loại đa dạng, từ game arcade cổ điển đến game 2 người, game nhiều người chơi và nhiều hơn nữa.
+        </p>
+        <p>
+          <strong>Công nghệ</strong> – 2A2Q.com là điểm đến yêu thích của game thủ trên mọi thiết bị, từ điện thoại đến máy tính để bàn với đồ họa 3D phong phú và game WebGL.
+        </p>
+        <p>
+          <strong>Mạng trò chơi mở rộng</strong> – Nếu bạn thích thế giới 2D truyền thống, hãy khám phá kho lưu trữ game Flash kế thừa độc đáo của chúng tôi.
+        </p>
+        <p>
+          <strong>Kết nối với Cộng đồng Người chơi</strong> – Đăng ký tài khoản 2A2Q để trở thành một phần của cộng đồng game thủ sôi động!
+        </p>
+      </section>
+    </main>
+
+    <!-- ========== Footer ========== -->
+    <footer class="bg-white shadow mt-6">
+      <div id="cookie-banner" class="container mx-auto px-4 py-3 flex items-center justify-between">
+        <span id="cookieBannerText">
+          Chúng tôi sử dụng cookie để xuất nội dung, phân tích lưu lượng truy cập và quảng cáo.
+        </span>
+        <button id="close-banner-btn" class="bg-red-500 text-white px-4 py-2 rounded">OK</button>
+      </div>
+      <div class="footer-privacy fixed-bottom text-center">
+        <div class="container mx-auto px-4 py-3">
+          <p id="privacyFooterText">
+            © 2025 2A2Q.com. Trang web trò chơi trực tuyến miễn phí dành cho mọi lứa tuổi.
+          </p>
+          <div class="contact-info mt-2 text-gray-600 text-sm">
+            <p>Liên hệ: <a href="mailto:support@2Q2A.com" class="text-blue-500">support@2A2Q.com</a> - SĐT: 0123 456 789</p>
+            <p>
+              Theo dõi chúng tôi:
+              <a href="#" class="mx-1 text-blue-500"><i class="fab fa-facebook-square"></i></a>
+              <a href="#" class="mx-1 text-blue-400"><i class="fab fa-twitter-square"></i></a>
+              <a href="#" class="mx-1 text-pink-500"><i class="fab fa-instagram"></i></a>
+              <a href="#" class="mx-1 text-indigo-500"><i class="fab fa-discord"></i></a>
+              <a href="#" class="mx-1 text-red-500"><i class="fab fa-youtube"></i></a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- ========== Modals ========== -->
+    <!-- Modal Đăng ký -->
+    <div id="register-modal" class="modal">
+      <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4" id="registerModalTitle">Đăng ký</h2>
+        <form id="register-form" class="space-y-4">
+          <input class="border rounded px-4 py-2 w-full" type="text" placeholder="Tên người dùng" required />
+          <input class="border rounded px-4 py-2 w-full" type="email" placeholder="Email" required />
+          <input class="border rounded px-4 py-2 w-full" type="password" placeholder="Mật khẩu" required />
+          <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded w-full" id="registerBtnText">
+            Đăng ký
+          </button>
+        </form>
+        <button id="close-register-modal" class="mt-4 bg-gray-200 px-4 py-2 rounded">Đóng</button>
+      </div>
+    </div>
+    <!-- Modal Đăng nhập -->
+    <div id="login-modal" class="modal">
+      <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4" id="loginModalTitle">Đăng nhập</h2>
+        <form id="login-form" class="space-y-4">
+          <input class="border rounded px-4 py-2 w-full" type="email" placeholder="Email" required />
+          <input class="border rounded px-4 py-2 w-full" type="password" placeholder="Mật khẩu" required />
+          <button type="submit" class="bg-gray-200 px-4 py-2 rounded w-full" id="loginBtnText">
+            Đăng nhập
+          </button>
+        </form>
+        <button id="close-login-modal" class="mt-4 bg-gray-200 px-4 py-2 rounded">Đóng</button>
+      </div>
+    </div>
+    <!-- Modal User Menu -->
+    <div id="recent-modal" class="modal">
+      <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4" id="recentModalTitle">Chơi gần đây</h2>
+        <p id="recentModalBody">Bạn chưa có lịch sử chơi game.</p>
+        <button class="mt-4 bg-gray-200 px-4 py-2 rounded" onclick="hideModal('recent-modal')" id="closeUserModalBtn1">Đóng</button>
+      </div>
+    </div>
+    <div id="bookmarks-modal" class="modal">
+      <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4" id="bookmarksModalTitle">Đánh dấu (0)</h2>
+        <p id="bookmarksModalBody">Bạn chưa có game đánh dấu nào.</p>
+        <button class="mt-4 bg-gray-200 px-4 py-2 rounded" onclick="hideModal('bookmarks-modal')" id="closeUserModalBtn2">Đóng</button>
+      </div>
+    </div>
+    <div id="favorites-modal" class="modal">
+      <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4" id="favoritesModalTitle">Được yêu thích (0)</h2>
+        <p id="favoritesModalBody">Bạn chưa có game yêu thích nào.</p>
+        <button class="mt-4 bg-gray-200 px-4 py-2 rounded" onclick="hideModal('favorites-modal')" id="closeUserModalBtn3">Đóng</button>
+      </div>
+    </div>
+    <div id="achievements-modal" class="modal">
+      <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4" id="achievementsModalTitle">Thành tích</h2>
+        <p id="achievementsModalBody">Bạn chưa có thành tích nào.</p>
+        <button class="mt-4 bg-gray-200 px-4 py-2 rounded" onclick="hideModal('achievements-modal')" id="closeUserModalBtn4">Đóng</button>
+      </div>
+    </div>
+    <div id="myprofile-modal" class="modal">
+      <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4" id="myProfileModalTitle">Hồ sơ của tôi</h2>
+        <p id="myProfileModalBody">Tên: mnbna<br/>Email: demo@example.com</p>
+        <button class="mt-4 bg-gray-200 px-4 py-2 rounded" onclick="hideModal('myprofile-modal')" id="closeUserModalBtn5">Đóng</button>
+      </div>
+    </div>
+    <div id="editprofile-modal" class="modal">
+      <div class="modal-content">
+        <h2 class="text-xl font-bold mb-4" id="editProfileModalTitle">Chỉnh sửa hồ sơ</h2>
+        <form class="space-y-4">
+          <input class="border rounded px-4 py-2 w-full" type="text" placeholder="Tên hiển thị" value="mnbna" />
+          <input class="border rounded px-4 py-2 w-full" type="email" placeholder="Email" value="demo@example.com" />
+          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded w-full" id="editProfileSubmitBtn">
+            Lưu
+          </button>
+        </form>
+        <button class="mt-4 bg-gray-200 px-4 py-2 rounded" onclick="hideModal('editprofile-modal')" id="closeUserModalBtn6">Đóng</button>
+      </div>
+    </div>
+
+    <!-- ========== Script ========== -->
+    <script>
+      // ----- Trạng thái đăng nhập (giả lập) -----
+      let isLoggedIn = false;
+      const authButtons = document.getElementById("auth-buttons");
+      const userMenu = document.getElementById("user-menu");
+      function updateUI() {
+        if(isLoggedIn) {
+          authButtons.classList.add("hidden");
+          userMenu.classList.remove("hidden");
+        } else {
+          authButtons.classList.remove("hidden");
+          userMenu.classList.add("hidden");
+        }
+      }
+
+      // ----- Modal show/hide -----
+      function showModal(modalId) {
+        document.getElementById(modalId).style.display = "flex";
+      }
+      function hideModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+      }
+
+      // ----- Logo scroll top -----
+      document.getElementById("logo").addEventListener("click", function(){
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+
+      // ----- Auth Events -----
+      document.getElementById("register-btn").addEventListener("click", () => showModal("register-modal"));
+      document.getElementById("login-btn").addEventListener("click", () => showModal("login-modal"));
+      document.getElementById("close-register-modal").addEventListener("click", () => hideModal("register-modal"));
+      document.getElementById("close-login-modal").addEventListener("click", () => hideModal("login-modal"));
+      document.getElementById("register-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        alert("Đăng ký thành công (demo)!");
+        hideModal("register-modal");
+      });
+      document.getElementById("login-form").addEventListener("submit", function(e){
+        e.preventDefault();
+        alert("Đăng nhập thành công (demo)!");
+        hideModal("login-modal");
+        isLoggedIn = true;
+        updateUI();
+      });
+      document.getElementById("logout-btn").addEventListener("click", function(e){
+        e.preventDefault();
+        isLoggedIn = false;
+        updateUI();
+      });
+
+      // ----- Cookie Banner -----
+      document.getElementById("close-banner-btn").addEventListener("click", function(){
+        document.getElementById("cookie-banner").style.display = "none";
+      });
+
+      // ----- Filter / Search -----
+      const searchInput = document.getElementById("search-input");
+      const filterButtons = document.querySelectorAll(".filter-btn");
+      const gameItems = Array.from(document.querySelectorAll(".game-item"));
+      function filterGames(){
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        const activeBtn = document.querySelector(".filter-btn.active");
+        const categoryFilter = activeBtn ? activeBtn.dataset.category.toLowerCase() : "all";
+        gameItems.forEach(item => {
+          const title = item.dataset.title.toLowerCase();
+          const categories = item.dataset.category.toLowerCase();
+          const matchSearch = title.includes(searchTerm);
+          let matchCategory = (categoryFilter === "all") || categories.includes(categoryFilter);
+          item.style.display = matchSearch && matchCategory ? "block" : "none";
+        });
+      }
+      searchInput.addEventListener("input", filterGames);
+      filterButtons.forEach(btn => {
+        btn.addEventListener("click", function(){
+          filterButtons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          filterGames();
+        });
+      });
+      document.getElementById("new-game-btn").addEventListener("click", function(){
+        window.location.reload();
+      });
+
+      // ----- User Menu Modals -----
+      document.getElementById("btn-recent-plays").addEventListener("click", e => { e.preventDefault(); showModal("recent-modal"); });
+      document.getElementById("btn-bookmarks").addEventListener("click", e => { e.preventDefault(); showModal("bookmarks-modal"); });
+      document.getElementById("btn-favorites").addEventListener("click", e => { e.preventDefault(); showModal("favorites-modal"); });
+      document.getElementById("btn-achievements").addEventListener("click", e => { e.preventDefault(); showModal("achievements-modal"); });
+      document.getElementById("btn-my-profile").addEventListener("click", e => { e.preventDefault(); showModal("myprofile-modal"); });
+      document.getElementById("btn-edit-profile").addEventListener("click", e => { e.preventDefault(); showModal("editprofile-modal"); });
+
+      // ----- Translations -----
+      const translations = {
+        vi: {
+          header: {
+            logoText: "2A2Q",
+            searchPlaceholder: "Tìm kiếm game hay...",
+            newGame: "Game Mới",
+            register: "Đăng ký",
+            login: "Đăng nhập"
+          },
+          cookieBanner: "Chúng tôi sử dụng cookie để xuất nội dung, phân tích lưu lượng truy cập và quảng cáo.",
+          privacyFooter: "© 2025 2Q2A2Q2A.com. Trang web trò chơi trực tuyến miễn phí dành cho mọi lứa tuổi.",
+          userMenu: {
+            recentPlay: "Chơi gần đây",
+            bookmark: "Đánh dấu (0)",
+            favorite: "Được yêu thích (0)",
+            achievement: "Thành tích",
+            myProfile: "Hồ sơ của tôi",
+            editProfile: "Chỉnh sửa hồ sơ",
+            logout: "Đăng xuất"
+          },
+          modals: {
+            registerModalTitle: "Đăng ký",
+            loginModalTitle: "Đăng nhập",
+            registerBtnText: "Đăng ký",
+            loginBtnText: "Đăng nhập",
+            modalRecentTitle: "Chơi gần đây",
+            modalRecentBody: "Bạn chưa có lịch sử chơi game.",
+            modalBookmarksTitle: "Đánh dấu (0)",
+            modalBookmarksBody: "Bạn chưa có game đánh dấu nào.",
+            modalFavoritesTitle: "Được yêu thích (0)",
+            modalFavoritesBody: "Bạn chưa có game yêu thích nào.",
+            modalAchievementsTitle: "Thành tích",
+            modalAchievementsBody: "Bạn chưa có thành tích nào.",
+            modalMyProfileTitle: "Hồ sơ của tôi",
+            modalMyProfileBody: "Tên: mnbna\nEmail: demo@example.com",
+            modalEditProfileTitle: "Chỉnh sửa hồ sơ",
+            modalEditProfileSubmit: "Lưu",
+            closeText: "Đóng"
+          },
+          language: "Ngôn ngữ",
+          theme: "Giao diện",
+          categories: {
+            girl: "Cho Con Gái",
+            fighting: "Đối Kháng",
+            driving: "Lái Xe",
+            shooting: "Bắn Nhau",
+            strategy_rpg: "Chiến Thuật & Nhập Vai",
+            puzzle: "Giải Đố",
+            all: "Tất Cả",
+            two_player: "2 Người Chơi",
+            gun: "Súng",
+            car: "Xe Hơi",
+            fashion: "Thời Trang",
+            horror: "Kinh Dị",
+            arcade: "Arcade",
+            cooking: "Nấu Ăn",
+            football: "Bóng Đá",
+            three_player: "3 Người Chơi",
+            tank: "Xe Tăng",
+            fire_and_water: "Lửa & Nước",
+            pokemon: "Pokemon",
+            papa: "Papa’s Games",
+            roblox: "Roblox",
+            zombie: "Zombie",
+            fish: "Cá",
+            chess: "Cờ Vua"
+          },
+          about: {
+            title: "Trò chơi Trực tuyến Miễn phí dành cho Mọi lứa tuổi - Bắt đầu Chơi ngay hôm nay!",
+            line1: "Khám phá các Trò chơi Trực tuyến Miễn phí Hay nhất - Đắm chìm trong thế giới vui nhộn và phiêu lưu. Hàng nghìn trò chơi thú vị đang chờ đón bạn!",
+            line2: "2A2Q là gì? Hơn 15 năm chơi game trên Internet tại 2A2Q.com. Bạn có biết rằng 2A2Q đã cung cấp game trực tuyến miễn phí và câu đố từ năm 2006 không? Vậy là hơn 15 năm 2A2Q.com vui vẻ! Cảm ơn bạn đã là một phần của cộng đồng 2A2Q!",
+            line3: "2A2Q: Trang web trò chơi cuối của bạn – Games 2A2Q là nhà phát hành và triển khai game với mạng xã hội gồm 30 triệu người chơi, video, hướng dẫn và các nội dung truyền thông phát hành hàng giờ.",
+            line4: "Sự Phát triển của Game Trình duyệt – Với lịch sử lâu đời, 2Q2A2Q2A.com đã ghi lại hiện tượng xã hội về game trình duyệt miễn phí như một phương tiện nghệ thuật quan trọng.",
+            line5: "Thể loại game – Khám phá những trò chơi trực tuyến được phân loại đa dạng, từ game arcade cổ điển đến game 2 người, game nhiều người chơi và nhiều hơn nữa.",
+            line6: "Công nghệ – 2A2Q.com là điểm đến yêu thích của game thủ trên mọi thiết bị, từ điện thoại đến máy tính để bàn với đồ họa 3D phong phú và game WebGL.",
+            line7: "Mạng trò chơi mở rộng – Nếu bạn thích thế giới 2D truyền thống, hãy khám phá kho lưu trữ game Flash kế thừa độc đáo của chúng tôi.",
+            line8: "Kết nối với Cộng đồng Người chơi – Đăng ký tài khoản 2A2Q để trở thành một phần của cộng đồng game thủ sôi động!"
+          }
+        },
+        en: {
+          header: {
+            logoText: "2A2Q",
+            searchPlaceholder: "Search for awesome games...",
+            newGame: "New Games",
+            register: "Sign Up",
+            login: "Sign In"
+          },
+          cookieBanner: "We use cookies for content, traffic analysis, and advertising.",
+          privacyFooter: "© 2025 2Q2A.com. This website offers free online games for all ages.",
+          userMenu: {
+            recentPlay: "Recent Plays",
+            bookmark: "Bookmarks (0)",
+            favorite: "Favorites (0)",
+            achievement: "Achievements",
+            myProfile: "My Profile",
+            editProfile: "Edit Profile",
+            logout: "Log out"
+          },
+          modals: {
+            registerModalTitle: "Sign Up",
+            loginModalTitle: "Sign In",
+            registerBtnText: "Sign Up",
+            loginBtnText: "Sign In",
+            modalRecentTitle: "Recent Plays",
+            modalRecentBody: "You have no recent plays.",
+            modalBookmarksTitle: "Bookmarks (0)",
+            modalBookmarksBody: "You have no bookmarks.",
+            modalFavoritesTitle: "Favorites (0)",
+            modalFavoritesBody: "You have no favorite games.",
+            modalAchievementsTitle: "Achievements",
+            modalAchievementsBody: "You have no achievements yet.",
+            modalMyProfileTitle: "My Profile",
+            modalMyProfileBody: "Name: mnbna\nEmail: demo@example.com",
+            modalEditProfileTitle: "Edit Profile",
+            modalEditProfileSubmit: "Save",
+            closeText: "Close"
+          },
+          language: "Language",
+          theme: "Theme",
+          categories: {
+            girl: "For Girls",
+            fighting: "Fighting",
+            driving: "Driving",
+            shooting: "Shooting",
+            strategy_rpg: "Strategy & RPG",
+            puzzle: "Puzzle",
+            all: "All",
+            two_player: "2 Players",
+            gun: "Gun",
+            car: "Car",
+            fashion: "Fashion",
+            horror: "Horror",
+            arcade: "Arcade",
+            cooking: "Cooking",
+            football: "Football",
+            three_player: "3 Players",
+            tank: "Tank",
+            fire_and_water: "Fire & Water",
+            pokemon: "Pokemon",
+            papa: "Papa's Games",
+            roblox: "Roblox",
+            zombie: "Zombie",
+            fish: "Fish",
+            chess: "Chess"
+          },
+          about: {
+            title: "Free Online Games for All Ages – Start Playing Today!",
+            line1: "Discover the best free online games – Immerse yourself in a fun and adventurous world. Thousands of exciting games await you!",
+            line2: "What is 2Q2A? With over 15 years of online gaming, 2Q2A.com has been offering free online games and puzzles since 2006. That’s over 15 years of fun at 2Q2A.com! Thank you for being a part of the 2Q2A community!",
+            line3: "2Q2A: Your Ultimate Game Website – 2Q2A is a game publisher and platform with a social network of 30 million players, videos, tutorials, and daily media content.",
+            line4: "The Evolution of Browser Games – With a long history, 2Q2A.com has documented the social impact of free browser games as an important art form.",
+            line5: "Game Categories – Discover a diverse range of online games from classic arcade games to 2-player and multiplayer games.",
+            line6: "Technology – 2Q2A.com is the favorite destination for gamers on any device, from mobile phones to desktops, featuring rich 3D graphics and WebGL games.",
+            line7: "Expanding Game Network – If you prefer traditional 2D games, explore our unique Flash game archive.",
+            line8: "Connect with the Gaming Community – Sign up for 2Q2A to become a part of a vibrant gaming community!"
+          }
+        }
+      };
+
+      // ----- Cập nhật giao diện theo ngôn ngữ -----
+      function applyTranslations(lang) {
+        const t = translations[lang] || translations.vi;
+        // Header & Search
+        document.getElementById("header-logo-text").textContent = t.header.logoText;
+        document.getElementById("search-input").placeholder = t.header.searchPlaceholder;
+        document.getElementById("newGameText").textContent = t.header.newGame;
+        document.getElementById("registerText").textContent = t.header.register;
+        document.getElementById("loginText").textContent = t.header.login;
+        // Cookie & Footer
+        document.getElementById("cookieBannerText").textContent = t.cookieBanner;
+        document.getElementById("privacyFooterText").textContent = t.privacyFooter;
+        // User Menu
+        document.getElementById("recentPlayText").textContent = t.userMenu.recentPlay;
+        document.getElementById("bookmarkText").textContent = t.userMenu.bookmark;
+        document.getElementById("favoriteText").textContent = t.userMenu.favorite;
+        document.getElementById("achievementText").textContent = t.userMenu.achievement;
+        document.getElementById("myProfileText").textContent = t.userMenu.myProfile;
+        document.getElementById("editProfileText").textContent = t.userMenu.editProfile;
+        document.getElementById("logoutText").textContent = t.userMenu.logout;
+        // Language & Theme
+        document.getElementById("languageText").textContent = t.language;
+        document.getElementById("themeText").textContent = t.theme;
+        // Modals (Auth & User)
+        document.getElementById("registerModalTitle").textContent = t.modals.registerModalTitle;
+        document.getElementById("loginModalTitle").textContent = t.modals.loginModalTitle;
+        document.getElementById("registerBtnText").textContent = t.modals.registerBtnText;
+        document.getElementById("loginBtnText").textContent = t.modals.loginBtnText;
+        document.getElementById("recentModalTitle").textContent = t.modals.modalRecentTitle;
+        document.getElementById("recentModalBody").textContent = t.modals.modalRecentBody;
+        document.getElementById("bookmarksModalTitle").textContent = t.modals.modalBookmarksTitle;
+        document.getElementById("bookmarksModalBody").textContent = t.modals.modalBookmarksBody;
+        document.getElementById("favoritesModalTitle").textContent = t.modals.modalFavoritesTitle;
+        document.getElementById("favoritesModalBody").textContent = t.modals.modalFavoritesBody;
+        document.getElementById("achievementsModalTitle").textContent = t.modals.modalAchievementsTitle;
+        document.getElementById("achievementsModalBody").textContent = t.modals.modalAchievementsBody;
+        document.getElementById("myProfileModalTitle").textContent = t.modals.modalMyProfileTitle;
+        document.getElementById("myProfileModalBody").textContent = t.modals.modalMyProfileBody;
+        document.getElementById("editProfileModalTitle").textContent = t.modals.modalEditProfileTitle;
+        document.getElementById("editProfileSubmitBtn").textContent = t.modals.modalEditProfileSubmit;
+        document.getElementById("close-register-modal").textContent = t.modals.closeText;
+        document.getElementById("close-login-modal").textContent = t.modals.closeText;
+        document.getElementById("closeUserModalBtn1").textContent = t.modals.closeText;
+        document.getElementById("closeUserModalBtn2").textContent = t.modals.closeText;
+        document.getElementById("closeUserModalBtn3").textContent = t.modals.closeText;
+        document.getElementById("closeUserModalBtn4").textContent = t.modals.closeText;
+        document.getElementById("closeUserModalBtn5").textContent = t.modals.closeText;
+        document.getElementById("closeUserModalBtn6").textContent = t.modals.closeText;
+        // Cập nhật các nút lọc theo data-key
+        document.querySelectorAll(".filter-btn").forEach(btn => {
+          const key = btn.getAttribute("data-key");
+          if(key && t.categories[key]){
+            btn.querySelector("span").textContent = t.categories[key];
+          }
+        });
+        // Cập nhật About Section
+        document.querySelector(".about-section h2").textContent = t.about.title;
+        const aboutContent = document.querySelector(".about-section");
+        aboutContent.innerHTML = `<h2 class="text-2xl font-bold mb-4">${t.about.title}</h2>
+          <p>${t.about.line1}</p>
+          <p>${t.about.line2}</p>
+          <p>${t.about.line3}</p>
+          <p>${t.about.line4}</p>
+          <p>${t.about.line5}</p>
+          <p>${t.about.line6}</p>
+          <p>${t.about.line7}</p>
+          <p>${t.about.line8}</p>`;
+      }
+
+      // Sự kiện đổi ngôn ngữ
+      document.querySelectorAll(".lang-dropdown-content button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const lang = btn.getAttribute("data-lang");
+          applyTranslations(lang);
+        });
+      });
+
+      // ----- Theme (Đổi màu nền) -----
+      document.querySelectorAll(".theme-dropdown-content button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const bodyEl = document.getElementById("body");
+          bodyEl.classList.remove("bg-white", "bg-pink-50", "bg-green-50", "bg-yellow-50", "bg-blue-50", "bg-purple-50");
+          const color = btn.getAttribute("data-color");
+          bodyEl.classList.add(`bg-${color}`);
+        });
+      });
+
+      // Khởi tạo giao diện mặc định
+      applyTranslations("vi");
+      updateUI();
+    </script>
+  </body>
+</html>
